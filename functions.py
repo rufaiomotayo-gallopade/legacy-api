@@ -22,7 +22,7 @@ def get_company_info(company_id):
         api_response = client.crm.companies.basic_api.get_by_id(company_id=company_id, archived=False)
         #pprint(api_response)
         formatted_api_response = pformat(api_response)
-        #print(formatted_api_response)
+        print(formatted_api_response)
         l = pformat(api_response).find("name")
         r = pformat(api_response).find(",",l)
         formatted_api_response = formatted_api_response[l:r]
@@ -38,3 +38,19 @@ def get_company_info(company_id):
         print("The number of associations is: "+ formatted_api_response[x+1:])
     except ApiException as e:
         print("Exception when calling basic_api->get_by_id: %s\n" % e)
+
+def create_association(company_id):
+
+    url = "https://api.hubapi.com/crm/v4/objects///associations//"
+
+    querystring = {"hapikey":API_KEY}
+
+    payload = "[{\"associationCategory\":\"HUBSPOT_DEFINED\",\"associationTypeId\":14}]"
+    headers = {
+        'accept': "application/json",
+        'content-type': "application/json"
+        }
+
+    response = requests.request("PUT", url, data=payload, headers=headers, params=querystring)
+
+    print(response.text)
