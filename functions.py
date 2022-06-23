@@ -9,7 +9,6 @@ load_dotenv()
 API_KEY = os.getenv("API_KEY")
 client = hubspot.Client.create(api_key=API_KEY)
 
-
 def get_company_info(company_id):
     # 8959128878
     
@@ -33,19 +32,25 @@ def get_company_info(company_id):
 
 def list():
     try:
-        api_response = client.crm.companies.basic_api.get_page(limit=100, archived=False)
-        #pprint(api_response)
+        api_response = client.crm.companies.basic_api.get_page(limit=5, archived=False)
+        pprint(api_response)
         get_company_name(api_response)
+        while(pformat(api_response).find("after")!= -1):
+            #print(pformat(api_response)[pformat(api_response).find("after")+8:pformat(api_response).find(",")-1])
+            after = (pformat(api_response)[pformat(api_response).find("after")+9:pformat(api_response).find(",")-1])
+            # print("AFTER::::::")
+            # print(after)
+            api_response = client.crm.companies.basic_api.get_page(limit=100, after=after, archived=False)
+            get_company_name(api_response)
     except ApiException as e:
         print("Exception when calling basic_api->get_page: %s\n" % e)
 
 
 def get_company_name(api_response):
     #pprint(api_response)
-    print("STARTETDYUIHLJBHKGJFXDSZFBDNFCUGIKHLJK")
     formatted_api_response = pformat(api_response)
-    print(formatted_api_response)
-    print()
+    #print("COMPANY NAMES:")
+    #print(formatted_api_response)
     for x in range(100):
         #print(formatted_api_response)
         if (pformat(api_response).find("name")):
