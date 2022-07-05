@@ -112,22 +112,31 @@ def make_parents():
     global company_list 
     company_list = data_to_dict()
     failed = []
+    open('failed.txt', 'w').close()
     print("Attempting to make parent associations...")
     with open("associations.txt", 'r') as infile:
         for line in infile:
             tokens = line.strip().split('\t')
             child = tokens[0]
-            #print("Child is: ",child)
             parent = tokens[1]
-            #print("parent is: ",parent)
             if company_list.get(parent) == None: # if parent company is not in dictionary then ...
                 failed.append(parent + " failed to become parent of " + child) # appends failure message to failed array     
             elif company_list.get(child) == None: # if child company is not in dictionary then ...
                 failed.append(child + " failed to become child of " + parent) # appends failure message to failed array
-            elif isinstance(company_list.get(parent),list):
-                failed.append(parent + " has multiple instances and has failed to become parent of " + child) # appends failure message to failed array
-            elif isinstance(company_list.get(child),list):
-                failed.append(child + " has multiple instances and has failed to become parent of " + parent) # appends failure message to failed array
+            elif (isinstance(company_list.get(parent),list)) and isinstance(company_list.get(child),list): # if parent and children are both lists
+                for parent_id in company_list.get(parent):
+                    for child_id in company_list.get(child):
+                        make_parent(parent_id,child_id) # makes association for every instance of child and parent
+            elif (isinstance(company_list.get(parent),list)) and (not isinstance(company_list.get(child),list)): #if multiple instances of parent but not child
+                arr = company_list.get(parent) # make an array for parent ids
+                child_id = company_list.get(child)
+                for parent_id in arr: #makes association for every parent in lsit
+                    make_parent(parent_id, child_id)    
+            elif (isinstance(company_list.get(child),list)) and (not isinstance(company_list.get(parent),list)): #if multiple instance of children but not multiple parents
+                arr = company_list.get(child) # makes array for child ids
+                parent_id = company_list.get(parent)
+                for child_id in arr: #makes association for every child in lsit
+                    make_parent(parent_id, child_id)    
             else:
                 parent_id = company_list.get(parent)
                 child_id = company_list.get(child)
@@ -143,7 +152,7 @@ def data_to_dict(): #takes data from txt file and returns it in a dictionary
     with open("all_companies.txt", 'r') as infile:
         for line in infile:
             tokens = line.strip().split('\t')
-            #print(tokens)
+            print(tokens)
             company_name = tokens[1]
             #print("Company is: ",company_name)
             company_id = tokens[0]
