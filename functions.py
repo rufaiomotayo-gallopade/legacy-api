@@ -6,6 +6,7 @@ from pprint import pformat, pprint
 from hubspot.crm.companies import ApiException
 import requests
 from tkinter import *
+from tkinter import filedialog
 from openpyxl.workbook import Workbook
 from openpyxl import load_workbook
 from hubspot import HubSpot
@@ -170,10 +171,11 @@ def data_to_dict(x): #takes data from xlsx file and returns it in a dictionary
     ids = []
     #create instance of workbook
     wb = Workbook()
-    if x == 'company':
-            
+    if x == 'company':       
         #load exisiting work book
-        wb = load_workbook('companies.xlsx')
+        filename = filedialog.askopenfilename(initialdir="C:/", title="select file")
+        #wb = load_workbook('companies.xlsx')
+        wb = load_workbook(filename)
         
         # Create active worksheet
         ws = wb.active
@@ -197,8 +199,10 @@ def data_to_dict(x): #takes data from xlsx file and returns it in a dictionary
         
     elif x == 'contact':
         #load exisiting work book
-        wb = load_workbook('companies.xlsx')
-        
+        filename = filedialog.askopenfilename(initialdir="C:/", title="select company file")
+        #wb = load_workbook('companies.xlsx')
+        wb = load_workbook(filename)
+
         # Create active worksheet
         ws = wb.active
         
