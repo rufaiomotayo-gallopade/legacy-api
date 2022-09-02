@@ -5,10 +5,17 @@ import hubspot
 from pprint import pformat, pprint
 from hubspot.crm.companies import ApiException
 import requests
+from tkinter import *
+from openpyxl.workbook import Workbook
+from openpyxl import load_workbook
+from hubspot import HubSpot
+
+root = Tk()
+root.title('LUQMAN')
 
 load_dotenv()
-API_KEY = os.getenv("API_KEY")
-client = hubspot.Client.create(api_key=API_KEY)
+
+client = HubSpot(access_token='pat-na1-25f38d93-dc4c-428c-b4fb-5b47217b2ea3')
 
 def list_companies():
     company_list = data_to_dict("company")    
@@ -60,8 +67,6 @@ def makeParent_companyToContact(company_id, contact_id):
         print("SUCCESS: ", company_id, "is now associated with", contact_id)
     except ApiException as e:
         print("Exception when calling associations_api->create: %s\n" % e)
-
-
 
 def make_parents(x,y):
     if (x == 'company') and (y == 'company'):
@@ -158,70 +163,70 @@ def make_parents(x,y):
     else:
         print("Nah")
 
-def data_to_dict(x): #takes data from txt file and returns it in a dictionary
+def data_to_dict(x): #takes data from xlsx file and returns it in a dictionary
+    print('data_to_dict has been called')
+    count = 0
+    data = {}
+    ids = []
+    #create instance of workbook
+    wb = Workbook()
     if x == 'company':
-        emptyDict = {}
-        with open("all_companies.txt", 'r') as infile:
-            for line in infile:
-                tokens = line.strip().split('\t')
-                #print(tokens)
-                company_name = tokens[1]
-                #print("Company is: ",company_name)
-                company_id = tokens[0]
-                #print("ID is: ",company_id)
-                if emptyDict.get(company_name): # if compnay already exists
-                    curr_val = emptyDict.get(company_name) # stores current value of companyname to a variable
-                    if isinstance(curr_val, list): # checks if value at company_name is already a list
-                        curr_val.append(company_id) # if already a list it appends id
-                        emptyDict.update({company_name : curr_val}) # updates the dictionary with appended list
-                    else:  #if value at company name is not already list then will make into a list
-                        array =[]
-                        array.append(curr_val) # adds current value in dictionary
-                        array.append(company_id) # adds new id
-                        emptyDict.update({company_name : array}) #updates dictionary with new list of ids            
-                else: # if not in dictionary...
-                    emptyDict.update({company_name : company_id})
-            else:
-                emptyDict[company_name] = company_id
-        return emptyDict
-    elif x == 'contact':
-        emptyDict = {}
-        with open("all_contacts.txt", 'r') as infile:
-            for line in infile:
-                tokens = line.strip().split('\t',)
-                try:
-                    contact_last_name = tokens[2]
-                except:
-                   contact_last_name = ""
-                try:
-                    contact_first_name = tokens[1]
-                except:
-                   contact_first_name = ""
-                   
-                    
-                contact_id = tokens[0]
-                if contact_first_name == "" and contact_last_name == "":
-                    contact_name = ""
-                elif contact_first_name == "":
-                    contact_name = contact_last_name
-                elif contact_last_name == "":
-                    contact_name = contact_first_name
-                else:
-                    contact_name = contact_first_name + " " + contact_last_name
+            
+        #load exisiting work book
+        wb = load_workbook('companies.xlsx')
+        
+        # Create active worksheet
+        ws = wb.active
+        
+        # Create variable for Columns
+        column_a = ws['A']
+        column_b = ws['B']
 
-                if emptyDict.get(contact_name): # if contact already exists
-                    curr_val = emptyDict.get(contact_name) # stores current value of contact_name to a variable
-                    if isinstance(curr_val, list): # checks if value at contact_name is already a list
-                        curr_val.append(contact_id) # if already a list it appends id
-                        emptyDict.update({contact_name : curr_val}) # updates the dictionary with appended list
-                    else:  #if value at company name is not already list then will make into a list
-                        array =[]
-                        array.append(curr_val) # adds current value in dictionary
-                        array.append(contact_id) # adds new id
-                        emptyDict.update({contact_name : array}) #updates dictionary with new list of ids            
-                else: # if not in dictionary...
-                    emptyDict.update({contact_name : contact_id})
+        for cell in column_a:
+            ids.append(str(cell.value))  
+        id_len = len(ids)
+        company_name = []
+        for cell in column_b:
+            if  str(cell.value) == 'None':
+                company_name.append("")
             else:
-                emptyDict[contact_name] = contact_id
-        return emptyDict
-                
+                company_name.append(str(cell.value))
+        for x in range(id_len):
+            data.update( {company_name[x] : ids[x]} )
+
+        
+    elif x == 'contact':
+        #load exisiting work book
+        wb = load_workbook('companies.xlsx')
+        
+        # Create active worksheet
+        ws = wb.active
+        
+        # Create variable for Columns
+        column_a = ws['A']
+        column_b = ws['B']
+        column_c = ws['C']
+
+        for cell in column_a:
+            ids.append(str(cell.value))
+            
+        id_len = len(ids)
+        full_names = []
+            
+        for cell in column_b:
+            if  str(cell.value) == 'None':
+                full_names.append("")
+            else:
+                full_names.append(str(cell.value))
+            
+        for cell in column_c:
+            if  str(cell.value) == 'None':
+                full_names[count] = full_names[count]
+            else:
+                full_names[count] = str( full_names[count] + " " + str(cell.value)    )
+            count= count+1
+
+        for x in range(id_len):
+            data.update( {full_names[x] : ids[x]} )
+    print(data)
+    root.mainloop()
