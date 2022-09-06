@@ -10,16 +10,15 @@ from tkinter import filedialog
 from openpyxl.workbook import Workbook
 from openpyxl import load_workbook
 from hubspot import HubSpot
-
-root = Tk()
-root.title('LUQMAN')
+import itertools 
 
 load_dotenv()
 
 client = HubSpot(access_token='pat-na1-25f38d93-dc4c-428c-b4fb-5b47217b2ea3')
 
-def list_companies():
-    company_list = data_to_dict("company")    
+def print_data():
+    directory = filedialog.askopenfilename(initialdir="C:/", title="select company file")
+    company_list = data_to_dict("company", directory)    
     for key, value in (company_list).items():
         print(key, ' - ', value)
    
@@ -69,9 +68,9 @@ def makeParent_companyToContact(company_id, contact_id):
     except ApiException as e:
         print("Exception when calling associations_api->create: %s\n" % e)
 
-def make_parents(x,y):
+def make_parents(x, y, contact_directory, company_directory):
     if (x == 'company') and (y == 'company'):
-        company_list = data_to_dict("company")
+        company_list = data_to_dict("company", company_directory)
         failed = []
         open('failed.txt', 'w').close() # supposed to clear text in failed.txt before starting
         print("Beginning to make parent associations")
@@ -79,11 +78,11 @@ def make_parents(x,y):
             for line in infile:
                 try:
                     tokens = line.strip().split('\t')
-                    print(tokens)
+                    #print(tokens)
                     child = tokens[0]
-                    print(tokens[0])
+                    #print(tokens[0])
                     parent = tokens[1] # if there is a blank entery this will not work which is why its in try except
-                    print(tokens[1])
+                    #print(tokens[1])
                 except:
                     print("ERROR: There is probably a blank entry somewhere in all_companies.txt")
                 if company_list.get(parent) == None: # if parent company is not in dictionary then ...
@@ -116,26 +115,28 @@ def make_parents(x,y):
             for x in failed: # for every element in failed array
                 out.write("".join(x) + "\n") # prints to failed.txt
     elif ((x == 'company') and (y == 'contact')) or ((x == 'contact') and (y == 'company')):
-        company_list = data_to_dict("company")
-        contact_list = data_to_dict("contact")
+        company_list = data_to_dict("company", company_directory)
+        contact_list = data_to_dict("contact", contact_directory)
         failed = []
+        #print(contact_list)
         open('failed.txt', 'w').close() # supposed to clear text in failed.txt before starting
         print("Beginning to make parent associations")
         with open("associations.txt", 'r') as infile:
             for line in infile:
                 try:
                     tokens = line.strip().split('\t')
-                    print(tokens)
+                    #print(tokens)
                     company = tokens[0]
-                    print(tokens[0])
+                    #print(tokens[0])
                     contact = tokens[1] # if there is a blank entery this will not work which is why its in try except
-                    print(tokens[1])
+                    #print(tokens[1])
                 except:
                     print("ERROR: There is probably a blank entry somewhere in all_companies.txt")
                 if company_list.get(company) == None: # if company is not in dictionary then ...
                     print("ERROR: Company not found in list of companies")
                     failed.append("Company: "+ company + " was not found and failed to associate with " + contact) # appends failure message to failed array     
                 elif contact_list.get(contact) == None: # if conatct is not in dictionary then ...
+                    print("failed to get contact from contact list: ", contact, contact_list.get(contact))
                     print("ERROR: Contact not found in list of conatcts")
                     failed.append("Contact:" + contact + " was not found and failed to associate with " + company) # appends failure message to failed array
                 elif (isinstance(company_list.get(company),list)) and isinstance(contact_list.get(contact),list): # if both are lists . . .
@@ -164,44 +165,44 @@ def make_parents(x,y):
     else:
         print("Nah")
 
-def data_to_dict(x): #takes data from xlsx file and returns it in a dictionary
+def data_to_dict(type, directory): #takes data from xlsx file and returns it in a dictionary
     print('data_to_dict has been called')
-    count = 0
     data = {}
-    ids = []
     #create instance of workbook
     wb = Workbook()
-    if x == 'company':       
+    if type == 'company':       
         #load exisiting work book
-        filename = filedialog.askopenfilename(initialdir="C:/", title="select file")
-        #wb = load_workbook('companies.xlsx')
-        wb = load_workbook(filename)
+        wb = load_workbook(directory)
         
         # Create active worksheet
         ws = wb.active
         
         # Create variable for Columns
-        column_a = ws['A']
-        column_b = ws['B']
+        column_a = ws['A'] # ids
+        column_b = ws['B'] # company names
 
-        for cell in column_a:
-            ids.append(str(cell.value))  
-        id_len = len(ids)
-        company_name = []
-        for cell in column_b:
-            if  str(cell.value) == 'None':
-                company_name.append("")
-            else:
-                company_name.append(str(cell.value))
-        for x in range(id_len):
-            data.update( {company_name[x] : ids[x]} )
-
+        # iterates over 3 lists and executes 
+        # 2 times as len(value)= 2 which is the
+        # minimum among all the three 
+        for (a, b) in zip(column_a, column_b):
+            try:
+                if b.value in data:
+                    if isinstance(data[b.value], list):
+                        arr = data[b.value]
+                        arr.append(a.value)
+                        data.update( {b.value : arr} )
+                    else:
+                        arr = [data[b.value]]
+                        arr.append(a.value)
+                        data.update( {b.value : arr} )
+                else:
+                    data.update( {b.value : a.value} )
+            except:
+                    data.update( {b.value : a.value} )
         
-    elif x == 'contact':
+    elif type == 'contact':
         #load exisiting work book
-        filename = filedialog.askopenfilename(initialdir="C:/", title="select company file")
-        #wb = load_workbook('companies.xlsx')
-        wb = load_workbook(filename)
+        wb = load_workbook(directory)
 
         # Create active worksheet
         ws = wb.active
@@ -211,26 +212,28 @@ def data_to_dict(x): #takes data from xlsx file and returns it in a dictionary
         column_b = ws['B']
         column_c = ws['C']
 
-        for cell in column_a:
-            ids.append(str(cell.value))
-            
-        id_len = len(ids)
-        full_names = []
-            
-        for cell in column_b:
-            if  str(cell.value) == 'None':
-                full_names.append("")
+        for (a, b, c) in zip(column_a, column_b, column_c):
+            if b.value == None and c.value == None:
+                full_name = ""
+            elif b.value == None:
+                full_name = c.value
+            elif c.value == None:
+                full_name = b.value
             else:
-                full_names.append(str(cell.value))
-            
-        for cell in column_c:
-            if  str(cell.value) == 'None':
-                full_names[count] = full_names[count]
-            else:
-                full_names[count] = str( full_names[count] + " " + str(cell.value)    )
-            count= count+1
-
-        for x in range(id_len):
-            data.update( {full_names[x] : ids[x]} )
+                full_name = b.value + " " + c.value
+            try:
+                if full_name in data:
+                    if isinstance(data[full_name], list):
+                        arr = data[full_name]
+                        arr.append(a.value)
+                        data.update( {full_name : arr} )
+                    else:
+                        arr = [data[full_name]]
+                        arr.append(a.value)
+                        data.update( {full_name : arr} )
+                else:
+                    data.update( {full_name : a.value} )
+            except:
+                    data.update( {full_name : a.value} )
     print(data)
-    root.mainloop()
+    return data
