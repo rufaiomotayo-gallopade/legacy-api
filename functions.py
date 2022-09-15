@@ -128,13 +128,11 @@ def make_parents(associaton_type,  contact_directory, company_directory, associa
             for x in failed: # for every element in failed array
                 out.write("".join(x) + "\n") # prints to failed.txt
     elif (associaton_type == 'company-contact') or (associaton_type == 'contact-company'):
-        print("x")
         company_list = data_to_dict("company", company_directory)
         contact_list = data_to_dict("contact", contact_directory)
         failed = []
         open('failed.txt', 'w').close() # supposed to clear text in failed.txt before starting
         for line in associations:
-            print("y")
             try:
                 company = line
                 contact = associations[line] # if there is a blank entery this will not work which is why its in try except
@@ -217,6 +215,7 @@ def data_to_dict(type, directory): #takes data from xlsx file and returns it in 
                         data.update( {b.value : a.value} )
                 except:
                         data.update( {b.value : a.value} ) 
+                        
         elif type == 'contact':
             print('contacts')
             #load exisiting work book
