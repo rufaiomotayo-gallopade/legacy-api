@@ -13,9 +13,9 @@ from hubspot import HubSpot
 import itertools
 import time
 
-load_dotenv()
+load_dotenv() 
 # t = time.localtime()
-client = HubSpot(access_token='pat-na1-25f38d93-dc4c-428c-b4fb-5b47217b2ea3')
+client = HubSpot(access_token=os.getenv("ACCESS_TOKEN"))
 
 def print_data():
     directory = filedialog.askopenfilename(initialdir="C:/", title="select company file")
@@ -73,7 +73,7 @@ def make_parents(associaton_type,  contact_directory, company_directory, associa
     associations = data_to_dict("associations", associations_directory)
     print(associations)
     #try:
-    
+     
     if associaton_type == 'company-company':
         company_list = data_to_dict("company", company_directory)
         failed = []
