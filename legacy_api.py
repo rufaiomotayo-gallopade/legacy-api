@@ -19,6 +19,10 @@ def data_to_dict_handler_associations():
     directory = filedialog.askopenfilename(initialdir="C:/", title="select associations file")
     print(functions.data_to_dict("associations", directory))
 
+def data_to_dict_handler_product():
+    directory = filedialog.askopenfilename(initialdir="C:/", title="select products file")
+    print(functions.data_to_dict("products", directory))
+
 def make_parents_contacts_to_company():
     contact_directory = filedialog.askopenfilename(initialdir=r"C:\Users\tayor\Desktop\legacy_api", title="Please select contact file")
     company_directory = filedialog.askopenfilename(initialdir=r"C:\Users\tayor\Desktop\legacy_api", title="Please select company file")
@@ -43,12 +47,14 @@ contact_print_button = Button (root, text="Print contacts.xlsx", padx=25, pady=2
 association_print_button = Button (root, text="Print association.xlsx", padx=25, pady=25, command=data_to_dict_handler_associations)
 assocation_contacts_company = Button (root, text="Make parents: contact -> company", padx=25, pady=25, command=make_parents_contacts_to_company)
 assocation_company_company = Button (root, text="Make Parents: company -> company", padx=25, pady=25, command=make_parents_company_to_company)
+print_products = Button (root, text="Print Products", padx=25, pady=25, command=data_to_dict_handler_product)
 quit_button = Button(root, text="EXIT", command=root.quit)
 
 label1.grid(row=0, column=2)
 company_print_button.grid(row=2, column=2)
 contact_print_button.grid(row=3, column=2)
 association_print_button.grid(row=4, column=2)
+print_products.grid(row=5, column=2)
 
 quit_button.grid(row=7, column=3)
 

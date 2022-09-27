@@ -17,6 +17,13 @@ load_dotenv()
 # t = time.localtime()
 client = HubSpot(access_token=os.getenv("ACCESS_TOKEN"))
 
+def get_products():
+    try:
+        api_response = client.crm.products.basic_api.get_page(limit=10, archived=False)
+        pprint(api_response)
+    except ApiException as e:
+        print("Exception when calling basic_api->get_page: %s\n" % e)
+
 def print_data():
     directory = filedialog.askopenfilename(initialdir="C:/", title="select company file")
     company_list = data_to_dict("company", directory)    
@@ -194,13 +201,13 @@ def data_to_dict(type, directory): #takes data from xlsx file and returns it in 
             ws = wb.active
             
             # Create variable for Columns
-            column_a = ws['A'] # ids
-            column_b = ws['B'] # company names
+            id_column = ws['A'] # ids
+            name_column = ws['B'] # names
 
             # iterates over 3 lists and executes 
             # 2 times as len(value)= 2 which is the
             # minimum among all the three 
-            for (a, b) in zip(column_a, column_b):
+            for (a, b) in zip(id_column, name_column):
                 try:
                     if b.value in data:
                         if isinstance(data[b.value], list):
@@ -217,7 +224,6 @@ def data_to_dict(type, directory): #takes data from xlsx file and returns it in 
                         data.update( {b.value : a.value} ) 
                         
         elif type == 'contact':
-            print('contacts')
             #load exisiting work book
             wb = load_workbook(directory)
 
@@ -252,6 +258,36 @@ def data_to_dict(type, directory): #takes data from xlsx file and returns it in 
                         data.update( {full_name : a.value} )
                 except:
                         data.update( {full_name : a.value} )
+        elif type == "products":
+            #load exisiting work book
+            wb = load_workbook(directory)
+            
+            # Create active worksheet
+            ws = wb.active
+            
+            # Create variable for Columns
+            id_column = ws['A'] # ids
+            name_column = ws['F'] # names
+
+            # iterates over 3 lists and executes 
+            # 2 times as len(value)= 2 which is the
+            # minimum among all the three 
+            for (a, b) in zip(id_column, name_column):
+                try:
+                    if b.value in data:
+                        if isinstance(data[b.value], list):
+                            arr = data[b.value]
+                            arr.append(a.value)
+                            data.update( {b.value : arr} )
+                        else:
+                            arr = [data[b.value]]
+                            arr.append(a.value)
+                            data.update( {b.value : arr} )
+                    else:
+                        data.update( {b.value : a.value} )
+                except:
+                        data.update( {b.value : a.value} ) 
+
     except:
         print("ERROR: type error")
     
