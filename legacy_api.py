@@ -3,6 +3,7 @@ import functions
 from tkinter import *
 from tkinter import filedialog
 from flask import Flask
+import time
 
 # app = Flask(__name__)
 
@@ -37,7 +38,7 @@ def make_parents_company_to_company():
 
 # @app.route('/')
 # def initial():
-print("Started")
+print("Started at ",(time.strftime("%H:%M:%S", time.localtime())))
 root = Tk()
 root.title('LUQMAN')
 label1 = Label(root, text="Printing options:")
@@ -63,4 +64,4 @@ assocation_contacts_company.grid(row=2, column=4)
 assocation_company_company.grid(row=3, column=4)
     
 root.mainloop() 
-print("Ended")
+print("Ended at ",(time.strftime("%H:%M:%S", time.localtime())))

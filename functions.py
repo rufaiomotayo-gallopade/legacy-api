@@ -75,10 +75,22 @@ def makeParent_companyToContact(company_id, contact_id):
     except ApiException as e:
         print("Exception when calling associations_api->create: %s\n" % e)
 
+def makeParent_producttoContact(product_id, contact_id):
+    try:
+        api_response = client.crm.products.associations_api.create(
+            product_id = product_id, 
+            to_object_type = "contact", 
+            to_object_id = contact_id, 
+            association_type="associationType"
+            )
+        pprint(api_response)
+    except ApiException as e:
+        print("Exception when calling associations_api->create: %s\n" % e)
+
 def make_parents(associaton_type,  contact_directory, company_directory, associations_directory):
     print("make_parents has been called -",(time.strftime("%H:%M:%S", time.localtime())))
     associations = data_to_dict("associations", associations_directory)
-    print(associations)
+    # print(associations)
     #try:
      
     if associaton_type == 'company-company':
