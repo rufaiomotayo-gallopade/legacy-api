@@ -4,6 +4,7 @@ import os
 import hubspot
 from pprint import pformat, pprint
 from hubspot.crm.companies import ApiException
+from hubspot.crm.products import SimplePublicObjectInput, ApiException
 import requests
 from tkinter import *
 from tkinter import filedialog
@@ -199,6 +200,75 @@ def make_parents(associaton_type,  contact_directory, company_directory, associa
     print("ERROR: association type ")
     print("make_parents has been completed -",(time.strftime("%H:%M:%S", time.localtime())))
 
+def handle_products(directory):
+    wb = Workbook()
+    
+    wb = load_workbook(directory)
+    ws = wb.active
+
+    name_column = ws['A'] # names
+    price_column = ws['B'] # prices
+    description_column = ws['C'] 
+    hs_sku__column = ws['D'] 
+    hs_cost_of_goods_sold_column = ws['E'] 
+
+    for (
+        name, 
+        price, 
+        description, 
+        hs_sku, 
+        hs_cost_of_goods_sold
+        ) in zip(
+            name_column, 
+            price_column, 
+            description_column, 
+            hs_sku__column,  
+            hs_cost_of_goods_sold_column):
+        # try:
+            if name.value == "Name*": continue # doesnt count initial row
+            if name.value == "Example" and price.value == "0": continue # doesnt count example
+            if isinstance(price.value, str): (price.value).replace("$", "")
+
+            properties = {}
+            properties.update({"name": name.value})
+            properties.update({"price": price.value})
+
+            if description.value == None:
+                description.value = ""
+            else:
+                properties["description"] = description.value
+
+            if hs_sku.value == None:
+                hs_sku.value = ""
+            else:
+                properties["hs_sku"] = hs_sku.value
+
+            # if hs_recurring_billing_period.value == None:
+            #     hs_recurring_billing_period.value = ""
+            # else:
+            #     properties["hs_recurring_billing_period"] = hs_recurring_billing_period.value
+
+            if hs_cost_of_goods_sold.value == None:
+                hs_cost_of_goods_sold.value = ""
+            elif isinstance(hs_cost_of_goods_sold.value, str):
+                if isinstance(hs_cost_of_goods_sold.value, str): (hs_cost_of_goods_sold.value).replace("$", "")
+            else:
+                properties["hs_cost_of_goods_sold"] = hs_cost_of_goods_sold.value
+
+            #print(properties)
+            import_product(properties)
+        # except:
+        #        print("Error with import") 
+    
+
+def import_product(properties):
+    simple_public_object_input = SimplePublicObjectInput(properties=properties)
+    try:
+        api_response = client.crm.products.basic_api.create(simple_public_object_input=simple_public_object_input)
+        pprint(api_response)
+    except ApiException as e:
+        print("Exception when calling basic_api->create: %s\n" % e)
+
 def data_to_dict(type, directory): #takes data from xlsx file and returns it in a dictionary
     print('data_to_dict has been called -', (time.strftime("%H:%M:%S", time.localtime())))
     data = {}
@@ -219,57 +289,54 @@ def data_to_dict(type, directory): #takes data from xlsx file and returns it in 
             # iterates over 3 lists and executes 
             # 2 times as len(value)= 2 which is the
             # minimum among all the three 
-            for (a, b) in zip(id_column, name_column):
+            for (id, name) in zip(id_column, name_column):
                 try:
-                    if b.value in data:
-                        if isinstance(data[b.value], list):
-                            arr = data[b.value]
-                            arr.append(a.value)
-                            data.update( {b.value : arr} )
+                    if name.value in data:
+                        if isinstance(data[name.value], list):
+                            arr = data[name.value]
+                            arr.append(id.value)
+                            data.update( {name.value : arr} )
                         else:
-                            arr = [data[b.value]]
-                            arr.append(a.value)
-                            data.update( {b.value : arr} )
+                            arr = [data[name.value]]
+                            arr.append(id.value)
+                            data.update( {name.value : arr} )
                     else:
-                        data.update( {b.value : a.value} )
+                        data.update( {name.value : id.value} )
                 except:
-                        data.update( {b.value : a.value} ) 
+                        data.update( {name.value : id.value} ) 
                         
         elif type == 'contact':
             #load exisiting work book
             wb = load_workbook(directory)
-
-            # Create active worksheet
             ws = wb.active
             
-            # Create variable for Columns
-            column_a = ws['A']
-            column_b = ws['B']
-            column_c = ws['C']
+            id_column = ws['A'] #id
+            first_name_column_b = ws['B'] # first name
+            last_name_column_c = ws['C'] #last name
 
-            for (a, b, c) in zip(column_a, column_b, column_c):
-                if b.value == None and c.value == None:
+            for (id, first_name, last_name) in zip(id_column, first_name_column_b, last_name_column_c):
+                if first_name.value == None and last_name.value == None:
                     full_name = ""
-                elif b.value == None and c.value != None:
-                    full_name = c.value
-                elif b.value != None and c.value == None:
-                    full_name = b.value
+                elif first_name.value == None and last_name.value != None:
+                    full_name = last_name.value
+                elif first_name.value != None and last_name.value == None:
+                    full_name = first_name.value
                 else:
-                    full_name = b.value + " " + c.value
+                    full_name = first_name.value + " " + last_name.value
                 try:
                     if full_name in data:
                         if isinstance(data[full_name], list):
                             arr = data[full_name]
-                            arr.append(a.value)
+                            arr.append(id.value)
                             data.update( {full_name : arr} )
                         else:
                             arr = [data[full_name]]
-                            arr.append(a.value)
+                            arr.append(id.value)
                             data.update( {full_name : arr} )
                     else:
-                        data.update( {full_name : a.value} )
+                        data.update( {full_name : id.value} )
                 except:
-                        data.update( {full_name : a.value} )
+                        data.update( {full_name : id.value} )
         elif type == "products":
             #load exisiting work book
             wb = load_workbook(directory)
@@ -284,21 +351,21 @@ def data_to_dict(type, directory): #takes data from xlsx file and returns it in 
             # iterates over 3 lists and executes 
             # 2 times as len(value)= 2 which is the
             # minimum among all the three 
-            for (a, b) in zip(id_column, name_column):
+            for (id, name) in zip(id_column, name_column):
                 try:
-                    if b.value in data:
-                        if isinstance(data[b.value], list):
-                            arr = data[b.value]
-                            arr.append(a.value)
-                            data.update( {b.value : arr} )
+                    if name.value in data:
+                        if isinstance(data[name.value], list):
+                            arr = data[name.value]
+                            arr.append(id.value)
+                            data.update( {name.value : arr} )
                         else:
-                            arr = [data[b.value]]
-                            arr.append(a.value)
-                            data.update( {b.value : arr} )
+                            arr = [data[name.value]]
+                            arr.append(id.value)
+                            data.update( {name.value : arr} )
                     else:
-                        data.update( {b.value : a.value} )
+                        data.update( {name.value : id.value} )
                 except:
-                        data.update( {b.value : a.value} ) 
+                        data.update( {name.value : id.value} ) 
 
     except:
         print("ERROR: type error")
