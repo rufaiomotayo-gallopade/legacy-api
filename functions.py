@@ -1,3 +1,4 @@
+from operator import truediv
 from dotenv import load_dotenv, find_dotenv
 from hubspot3 import Hubspot3
 import os
@@ -27,8 +28,8 @@ def get_products():
 
 def print_data():
     directory = filedialog.askopenfilename(initialdir="C:/", title="select company file")
-    company_list = data_to_dict("company", directory)    
-    for key, value in (company_list).items():
+    company_dict = data_to_dict("company", directory)    
+    for key, value in (company_dict).items():
         print(key, ' - ', value)
    
 def get_name(id):
@@ -88,29 +89,36 @@ def makeParent_producttoContact(product_id, contact_id):
     except ApiException as e:
         print("Exception when calling associations_api->create: %s\n" % e)
 
+def in_dict(element, dictionary):
+    print("element", element)
+    if element in dictionary: # if company is not in dictionary then ...
+        return True
+    else:
+        return False
+
 def make_parents(associaton_type,  contact_directory, company_directory, associations_directory):
     print("make_parents has been called -",(time.strftime("%H:%M:%S", time.localtime())))
-    associations = data_to_dict("associations", associations_directory)
+    associations_dict = data_to_dict("associations", associations_directory)
     # print(associations)
     #try:
      
     if associaton_type == 'company-company':
-        company_list = data_to_dict("company", company_directory)
+        company_dict = data_to_dict("company", company_directory)
         failed = []
         open('failed.txt', 'w').close() # supposed to clear text in failed.txt before starting
-        for line in associations:
+        for line in associations_dict:
             try: # makes sure data is in right format
                 parent = line
-                child = associations[line] 
+                child = associations_dict[line] 
                 print("get parent ", parent, "get child ", child)
             except:
                 print("ERROR: There is probably a blank entry somewhere in all_companies.txt")
             print("parent is ",isinstance(parent, list))
             print("child is ", isinstance(child, list))
-            if company_list.get(parent) == None: # if parent company is not in dictionary then ...
+            if company_dict.get(parent) == None: # if parent company is not in dictionary then ...
                 print("ERROR: Parent company not found in list of companies")
                 failed.append(parent + " failed to become parent of " + child) # appends failure message to failed array     
-            # elif company_list.get(child) == None: # if child company is not in dictionary then ...
+            # elif company_dict.get(child) == None: # if child company is not in dictionary then ...
             #     print("ERROR: Child company not found in list of companies")
             #     failed.append(child + " failed to become child of " + parent) # appends failure message to failed array
             elif (isinstance(parent,list)) and isinstance(child,list): # if parent and children are both lists
@@ -119,85 +127,172 @@ def make_parents(associaton_type,  contact_directory, company_directory, associa
                 parent_ids = [] # makes array for parent ids
                 child_ids = [] # makes array for child ids
                 for id in parent:
-                    parent_ids.append(company_list[id])
+                    parent_ids.append(company_dict[id])
+
+                for id in parent: # if parent  is a list for every parent in the list. . .
+                    if in_dict(id, company_dict): # check if parent exists in the dict
+                        parent_ids.append(company_dict[id])
+                    else: #if it does not exist
+                        print("ERROR: Contact not found in list of conatcts")
+                        failed.append("Company:" + id + " was not found and failed to associate") # appends failure message to failed array
+
+
                 for id in child:
-                    child_ids.append(company_list[id])
+                    child_ids.append(company_dict[id])
                 for parent_id in parent_id:
                     for child_id in child_ids:
                         makeParent_companyToCompany(parent_id, child_id) # makes association for every instance of child and parent
             elif (isinstance(parent,list)) and (not isinstance(child,list)): #if multiple instances of parent but not child
-                child_id = company_list.get(child)
+                child_id = company_dict.get(child)
                 parent_ids = [] # makes array for parent ids
                 for id in parent:
-                    parent_ids.append(company_list[id])
+                    parent_ids.append(company_dict[id])
                 for parent_id in parent_ids: #makes association for every child in lsit
                     makeParent_companyToCompany(parent_id, child_id)   
             elif (isinstance(child,list)) and (not isinstance(parent,list)): #if multiple instance of children but not multiple parents
-                parent_id = company_list.get(parent)
+                parent_id = company_dict.get(parent)
                 child_ids = [] # makes array for child ids
                 for id in child:
-                    child_ids.append(company_list[id])
+                    child_ids.append(company_dict[id])
                 for child_id in child_ids: #makes association for every child in lsit
                     makeParent_companyToCompany(parent_id, child_id)    
             else:
-                parent_id = company_list.get(parent)
-                child_id = company_list.get(child)
+                parent_id = company_dict.get(parent)
+                child_id = company_dict.get(child)
                 makeParent_companyToCompany(parent_id, child_id)
         with open("failed.txt", 'w') as out:
             if failed: print("Some failures, check failed.txt for more info")
             for x in failed: # for every element in failed array
                 out.write("".join(x) + "\n") # prints to failed.txt
     elif (associaton_type == 'company-contact') or (associaton_type == 'contact-company'):
-        company_list = data_to_dict("company", company_directory)
-        contact_list = data_to_dict("contact", contact_directory)
+        company_dict = data_to_dict("company", company_directory)
+        contact_dict = data_to_dict("contact", contact_directory)
         failed = []
         open('failed.txt', 'w').close() # supposed to clear text in failed.txt before starting
-        for line in associations:
+        for line in associations_dict:
             try:
                 company = line
-                contact = associations[line] # if there is a blank entery this will not work which is why its in try except
+                print("company", company)
+                contact = associations_dict[line] # if there is a blank entery this will not work which is why its in try except
+                print("contact", contact)
+                if company == 'American Heritage School Of Boca/delray':
+                    print('is 9897690198 in thibg?', '9897690198' in company_dict)
             except:
                 print("ERROR: Check associations.xlsx")
-            if company_list.get(company) == None: # if company is not in dictionary then ...
-                print("ERROR: Company not found in list of companies")
-                failed.append("Company: "+ company + " was not found and failed to associate with " + contact) # appends failure message to failed array     
-            elif contact_list.get(contact) == None: # if conatct is not in dictionary then ...
-                print("ERROR: Contact not found in list of conatcts")
-                failed.append("Contact:" + contact + " was not found and failed to associate with " + company) # appends failure message to failed array
-            elif (isinstance(company,list)) and isinstance(contact,list): # if both are lists . . .
-                company_ids = [] # makes array for company ids
-                contact_ids = [] # makes array for contact ids
-                for id in company:
-                    company_ids.append(company_list[id])
-                for id in contact:
-                    contact_ids.append(company_list[id])
-                for company_id in company_ids:
-                    for contact_id in contact_ids:
-                        makeParent_companyToContact(company_id, contact_id) # makes association for every instance of child and parent
-            elif (isinstance(company,list)) and (not isinstance(contact,list)): #if multiple instances of company but not contact
-                contact_id = contact_list.get(contact)
-                company_ids = [] # makes array for parent ids
-                for id in company:
-                    company_ids.append(company_list[id])
-                for company_id in company_ids: #makes association for every child in lsit
-                    makeParent_companyToContact(company_id, contact_id)   
-            elif (isinstance(contact_list.get(contact),list)) and (not isinstance(company_list.get(company),list)): #if multiple instance of contacts but not multiple companies
-                company_id = company_list.get(company)
-                contact_ids = [] # makes array for contact ids
-                for id in contact_id:
-                    contact_ids.append(contact_list[id])
-                for contact_id in contact_ids: #makes association for every contact in list
-                    makeParent_companyToCompany(company_id, contact_id)                    
+
+            #print("compt dic", company_dict[company])           
+            #print("cont dic", contact_dict[contact])           
+            if contact == "" or contact == ' ' or contact == None:
+                print("contact blank????", contact)
+                continue
             else:
-                company_id = company_list.get(company)
-                contact_id = contact_list.get(contact)
-                makeParent_companyToContact(company_id, contact_id)
+                if (isinstance(company_dict[company],list)) and isinstance(contact,list): # if both are lists . . .
+                    company_ids = [] # makes array for company ids
+                    contact_ids = [] # makes array for contact ids
+                    for id in company_dict[company]: # if company is a list for every company in the list. . .
+                        if in_dict(company, company_dict): # check if company exists in the dict
+                            if isinstance(company_dict[company], list):
+                                company_ids.extend(company_dict[company])  
+                            else:
+                                company_ids.append(company_dict[company])  
+                            
+                        else: #if it does not exist
+                            print("ERROR: Company not found in list of companies", id)
+                            if isinstance(company, list):
+                                failed.append("Company:" + (', '.join(company)) + " was not found and failed to associate") # appends failure message to failed array
+                            else:
+                                failed.append("Company: "+ company + " was not found and failed to associate") # appends failure message to failed array
+
+                    for id in contact: # if contact is a list for every company in the list. . .
+                        if in_dict(id, contact_dict): # check if contact exists in the dict
+                            if isinstance(contact_dict[id], list):
+                                contact_ids.extend(contact_dict[id])
+                            else:
+                                contact_ids.append(contact_dict[id])
+                        else: #if it does not exist
+                            print("ERROR: Contact not found in list of conatcts")
+                            if isinstance(contact, list):
+                                failed.append("Contact:" + (', '.join(contact)) + " was not found and failed to associate") # appends failure message to failed array
+                            else:
+                                failed.append("Contact:" + contact + " was not found and failed to associate") # appends failure message to failed array
+                    for company_id in company_ids:
+                        for contact_id in contact_ids:
+                            makeParent_companyToContact(company_id, contact_id) # makes association for every instance of child and parent
+
+                elif (isinstance(company_dict[company],list)) and (not isinstance(contact,list)): #if multiple instances of company but not contact
+                    contact_id = contact_dict.get(contact)
+                    company_ids = [] # makes array for parent ids
+                    for id in company_dict[company]: # if company is a list for every company in the list. . .
+                        if in_dict(company, company_dict): # check if company exists in the dict
+                            if isinstance(company_dict[company], list):
+                                company_ids.extend(company_dict[company])  
+                            else:
+                                company_ids.append(company_dict[company])  
+                            
+                        else: #if it does not exist
+                            print("ERROR: Company not found in list of companies")
+                            if isinstance(company, list):
+                                failed.append("Company:" + (', '.join(company)) + " was not found and failed to associate") # appends failure message to failed array
+                            else:
+                                failed.append("Company: "+ company + " was not found and failed to associate") # appends failure message to failed array
+
+                    for company_id in company_ids: #makes association for every child in lsit
+                        makeParent_companyToContact(company_id, contact_id)   
+
+                elif (isinstance(contact,list)) and (not isinstance(company_dict[company],list)): #if multiple instance of contacts but not multiple companies
+                    company_id = company_dict.get(company)
+                    contact_ids = [] # makes array for contact ids
+                    for id in contact: # if contact is a list for every company in the list. . .
+                        if in_dict(id, contact_dict): # check if contact exists in the dict
+                            if isinstance(contact_dict[id], list):
+                                contact_ids.extend(contact_dict[id])
+                            else:
+                                contact_ids.append(contact_dict[id])
+                        else: #if it does not exist
+                            print("ERROR: Contact not found in list of conatcts")
+                            if isinstance(contact, list):
+                                failed.append("Contact:" + (', '.join(contact)) + " was not found and failed to associate") # appends failure message to failed array
+                            else:
+                                failed.append("Contact:" + contact + " was not found and failed to associate") # appends failure message to failed array
+                    
+                    for contact_id in contact_ids: #makes association for every contact in list
+                        makeParent_companyToContact(company_id, contact_id)          
+                elif company_dict.get(company) == None:
+                    print("ERROR: Company not found in list of company")
+                    failed.append("Company:" + company + " was not found and failed to associate") # appends failure message to failed array
+                elif contact_dict.get(contact) == None:
+                    print("ERROR: Contact not found in list of contacts")
+                    failed.append("Contact:" + contact + " was not found and failed to associate") # appends failure message to failed array
+                else:
+                    #print(4)
+                    company_id = company_dict.get(company)
+                    #print("comp id", company_id)
+                    contact_id = contact_dict.get(contact)
+                    #print("cont id", contact_id)
+                    if isinstance(company_id, list) and isinstance(contact_id, list):
+                        for company_id in company_id:
+                            for contact_id in contact_id:
+                                makeParent_companyToContact(company_id, contact_id)
+                    elif isinstance(company_id, list) and (not isinstance(contact_id, list)):
+                        for company_id in company_id:
+                            makeParent_companyToContact(company_id, contact_id)
+
+                    elif (not isinstance(company_id, list)) and isinstance(contact_id, list):
+                        for contact_id in contact_id:
+                            makeParent_companyToContact(company_id, contact_id)
+                    else:
+                        makeParent_companyToContact(company_id, contact_id)
+
+                    
+    #                print("contact id ", contact_id)
+
+
         with open("failed.txt", 'w') as out:
             if failed: print("Some failures, check failed.txt for more info")
             for x in failed: # for every element in failed array
                 out.write("".join(x) + "\n") # prints to failed.txt
     #except:
-    print("ERROR: association type ")
+    #print("ERROR: association type ")
     print("make_parents has been completed -",(time.strftime("%H:%M:%S", time.localtime())))
 
 def handle_products(directory):
@@ -291,7 +386,9 @@ def data_to_dict(type, directory): #takes data from xlsx file and returns it in 
             # minimum among all the three 
             for (id, name) in zip(id_column, name_column):
                 try:
-                    if name.value in data:
+                    if not (name.value.upper().isUpper()):
+                        continue
+                    elif name.value in data:
                         if isinstance(data[name.value], list):
                             arr = data[name.value]
                             arr.append(id.value)
@@ -324,7 +421,9 @@ def data_to_dict(type, directory): #takes data from xlsx file and returns it in 
                 else:
                     full_name = first_name.value + " " + last_name.value
                 try:
-                    if full_name in data:
+                    if not (full_name.upper().isupper() ):
+                        continue
+                    elif full_name in data:
                         if isinstance(data[full_name], list):
                             arr = data[full_name]
                             arr.append(id.value)
@@ -353,7 +452,9 @@ def data_to_dict(type, directory): #takes data from xlsx file and returns it in 
             # minimum among all the three 
             for (id, name) in zip(id_column, name_column):
                 try:
-                    if name.value in data:
+                    if not (full_name.upper().isupper() ):
+                        continue
+                    elif name.value in data:
                         if isinstance(data[name.value], list):
                             arr = data[name.value]
                             arr.append(id.value)
