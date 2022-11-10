@@ -19,18 +19,7 @@ load_dotenv()
 # t = time.localtime()
 client = HubSpot(access_token=os.getenv("ACCESS_TOKEN"))
 
-def get_products():
-    try:
-        api_response = client.crm.products.basic_api.get_page(limit=10, archived=False)
-        pprint(api_response)
-    except ApiException as e:
-        print("Exception when calling basic_api->get_page: %s\n" % e)
 
-def print_data():
-    directory = filedialog.askopenfilename(initialdir="C:/", title="select company file")
-    company_dict = data_to_dict("company", directory)    
-    for key, value in (company_dict).items():
-        print(key, ' - ', value)
    
 def get_name(id):
     url = "https://api.hubapi.com/companies/v2/companies/"+ str(id)
@@ -90,11 +79,9 @@ def makeParent_producttoContact(product_id, contact_id):
         print("Exception when calling associations_api->create: %s\n" % e)
 
 def in_dict(element, dictionary):
-    print("element", element)
-    if element in dictionary: # if company is not in dictionary then ...
-        return True
-    else:
-        return False
+    #print("element", element)
+    if element in dictionary: return True
+    else: return False
 
 def make_parents(associaton_type,  contact_directory, company_directory, associations_directory):
     print("make_parents has been called -",(time.strftime("%H:%M:%S", time.localtime())))
@@ -326,10 +313,35 @@ def make_parents(associaton_type,  contact_directory, company_directory, associa
                 out.write("".join(x) + "\n") # prints to failed.txt
     print("make_parents has been completed -",(time.strftime("%H:%M:%S", time.localtime())))
 
-def handle_products(directory):
+def get_products():
+    try:
+        api_response = client.crm.products.basic_api.get_page(limit=10, archived=False)
+        pprint(api_response)
+    except ApiException as e:
+        print("Exception when calling basic_api->get_page: %s\n" % e)
+
+def update_products(productId, dictionary):
+    # properties = {
+    #     "description": "Onboarding service for data product",
+    #     "hs_cost_of_goods_sold": "600.00",
+    #     "hs_recurring_billing_period": "12",
+    #     "hs_sku": "191902",
+    #     "name": "Implementation Service ",
+    #     "price": "6000.00"
+    # }
+    simple_public_object_input = SimplePublicObjectInput(properties=dictionary)
+    try:
+        api_response = client.crm.products.basic_api.update(product_id=productId, simple_public_object_input=simple_public_object_input)
+        #pprint(api_response)
+    except ApiException as e:
+        print("Exception when calling basic_api->update: %s\n" % e)
+
+def product_handeler(product_directory, import_directory):
+    print("product_handeler has been started -",(time.strftime("%H:%M:%S", time.localtime())))
+    products_dict = data_to_dict("products", product_directory)
     wb = Workbook()
     
-    wb = load_workbook(directory)
+    wb = load_workbook(import_directory)
     ws = wb.active
 
     name_column = ws['A'] # names
@@ -351,38 +363,45 @@ def handle_products(directory):
             hs_sku__column,  
             hs_cost_of_goods_sold_column):
         # try:
-            if name.value == "Name*": continue # doesnt count initial row
-            if name.value == "Example" and price.value == "0": continue # doesnt count example
+            failed = []
+            open('failed.txt', 'w').close() # supposed to clear text in failed.txt before starting
+            if (name.value == "Name*") or (name.value == "Example" and price.value == "0") : continue # doesnt count initial row
             if isinstance(price.value, str): (price.value).replace("$", "")
 
+            product_name = name.value
             properties = {}
-            properties.update({"name": name.value})
+            properties.update({"name": product_name})
             properties.update({"price": price.value})
 
-            if description.value == None:
-                description.value = ""
-            else:
+            
+            if (not (description.value == None) or (description.value == "") or (description.value == " ")) and isinstance(description.value, str):
                 properties["description"] = description.value
+            elif description.value and not isinstance(description.value, str): 
+                print(description.value, "Description needs to be a string value")
+                failed.append("product:" + product_name + " description failed:", description.value) # appends failure message to failed array
 
-            if hs_sku.value == None:
-                hs_sku.value = ""
-            else:
+            if (not (hs_sku.value == None) or (hs_sku.value == "") or (hs_sku.value == " ")) and (isinstance(hs_sku.value, int) or isinstance(hs_sku.value, str) or isinstance(hs_sku.value, complex)):
                 properties["hs_sku"] = hs_sku.value
+            elif hs_sku.value and (not isinstance(hs_sku.value, int) or not isinstance(hs_sku.value, float)): 
+                print(hs_sku.value, "SKU needs to consist of letters and or non-negative number value")
+                failed.append("product:" + product_name + " sku value failed:", hs_sku.value) # appends failure message to failed array
 
-            # if hs_recurring_billing_period.value == None:
-            #     hs_recurring_billing_period.value = ""
-            # else:
-            #     properties["hs_recurring_billing_period"] = hs_recurring_billing_period.value
-
-            if hs_cost_of_goods_sold.value == None:
-                hs_cost_of_goods_sold.value = ""
-            elif isinstance(hs_cost_of_goods_sold.value, str):
-                if isinstance(hs_cost_of_goods_sold.value, str): (hs_cost_of_goods_sold.value).replace("$", "")
-            else:
+            if (not (hs_cost_of_goods_sold.value == None) or (hs_cost_of_goods_sold.value == "") or (hs_cost_of_goods_sold.value == " ")) and (isinstance(hs_cost_of_goods_sold.value, int) or isinstance(hs_cost_of_goods_sold.value, float)) and (hs_cost_of_goods_sold.value >= 0):
                 properties["hs_cost_of_goods_sold"] = hs_cost_of_goods_sold.value
+            elif hs_cost_of_goods_sold.value and (not isinstance(hs_cost_of_goods_sold.value, int) or not isinstance(hs_cost_of_goods_sold.value, float)): 
+                print(hs_cost_of_goods_sold.value, "Cost needs to be a non-negative number value")
+                failed.append("product:" + product_name + " sku value failed:", hs_cost_of_goods_sold.value) # appends failure message to failed array
 
             #print(properties)
-            import_product(properties)
+            if in_dict(product_name, products_dict) :
+                update_products(products_dict[product_name],properties)
+            else:
+                import_product(properties)
+    with open("failed.txt", 'w') as out:
+        if failed: print("Some failures, check failed.txt for more info")
+        for x in failed: # for every element in failed array
+            out.write("".join(x) + "\n") # prints to failed.txt
+    print("product_handeler has been completed -",(time.strftime("%H:%M:%S", time.localtime())))
         # except:
         #        print("Error with import") 
     
@@ -391,7 +410,8 @@ def import_product(properties):
     simple_public_object_input = SimplePublicObjectInput(properties=properties)
     try:
         api_response = client.crm.products.basic_api.create(simple_public_object_input=simple_public_object_input)
-        pprint(api_response)
+        #print("*****************API RESPONSE**********")
+        #pprint(api_response)
     except ApiException as e:
         print("Exception when calling basic_api->create: %s\n" % e)
 
@@ -431,8 +451,7 @@ def data_to_dict(type, directory): #takes data from xlsx file and returns it in 
                     else:
                         data.update( {name.value : id.value} )
                 except:
-                        data.update( {name.value : id.value} ) 
-                        
+                        data.update( {name.value : id.value} )                        
         elif type == 'contact':
             #load exisiting work book
             wb = load_workbook(directory)
@@ -476,7 +495,6 @@ def data_to_dict(type, directory): #takes data from xlsx file and returns it in 
             
             # Create variable for Columns
             id_column = ws['A'] # ids
-            price_column = ws['C'] # ids
             name_column = ws['F'] # names
 
             # iterates over 3 lists and executes 
