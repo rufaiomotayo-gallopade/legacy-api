@@ -35,13 +35,14 @@ def make_parents_company_to_company():
     associations_directory = filedialog.askopenfilename(initialdir=r"C:\Users\tayor\Desktop\legacy_api", title="Please select associations file")
     functions.make_parents("company-company", "", company_directory, associations_directory) # contact delivery is a blank string bc its not neccesary
 
-def import_products_handeler():
-    directory = filedialog.askopenfilename(initialdir=r"C:\Users\tayor\Desktop\legacy_api", title="Please select products file")
-    functions.handle_products(directory)
+# def import_products_handeler():
+#     directory = filedialog.askopenfilename(initialdir=r"C:\Users\tayor\Desktop\legacy_api", title="Please select products file")
+#     functions.handle_products(directory)
 
 def update_products_handeler():
-    directory = filedialog.askopenfilename(initialdir=r"C:\Users\tayor\Desktop\legacy_api", title="Please select products file")
-    functions.update_products(directory)
+    product_directory = filedialog.askopenfilename(initialdir=r"C:\Users\tayor\Desktop\legacy_api", title="Please select file containg al products in hubspot")
+    directory = filedialog.askopenfilename(initialdir=r"C:\Users\tayor\Desktop\legacy_api", title="Please select file with products you wish to import")
+    functions.update_products(directory, product_directory)
     
 
 # @app.route('/')
@@ -58,8 +59,8 @@ association_print_button = Button (root, text="Print association.xlsx", padx=25,
 assocation_contacts_company = Button (root, text="Make parents: contact -> company", padx=25, pady=25, command=make_parents_contacts_to_company)
 assocation_company_company = Button (root, text="Make Parents: company -> company", padx=25, pady=25, command=make_parents_company_to_company)
 print_products = Button (root, text="Print Products", padx=25, pady=25, command=data_to_dict_handler_product)
-import_products = Button (root, text="Import Products", padx=25, pady=25, command=import_products_handeler)
-update_products = Button (root, text="Update Products", padx=25, pady=25, command=update_products_handeler)
+#import_products = Button (root, text="Import Products", padx=25, pady=25, command=import_products_handeler)
+update_products = Button (root, text="Import / Update Products", padx=25, pady=25, command=update_products_handeler)
 quit_button = Button(root, text="EXIT", command=root.quit)
 
 label1.grid(row=0, column=2)
@@ -75,7 +76,7 @@ assocation_contacts_company.grid(row=2, column=4)
 assocation_company_company.grid(row=3, column=4)
 
 label3.grid(row=0, column=6)    
-import_products.grid(row=2, column=6)
+#import_products.grid(row=2, column=6)
 update_products.grid(row=3, column=6)
 
 

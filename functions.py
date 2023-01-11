@@ -154,7 +154,6 @@ def make_parents(associaton_type,  contact_directory, company_directory, associa
         open('failed.txt', 'w').close() # supposed to clear text in failed.txt before starting
         for line in associations:
             try:
-                print(1)
                 company = line
                 #print("company", company)
                 contact = associations[line] # if there is a blank entery this will not work which is why its in try except
@@ -164,7 +163,6 @@ def make_parents(associaton_type,  contact_directory, company_directory, associa
 
 
             try:
-                print(3)
                 if (isinstance(company,list)) and isinstance(contact,list): # if both are lists . . .
                     company_ids = [] # makes array for company ids
                     contact_ids = [] # makes array for contact ids
@@ -174,7 +172,6 @@ def make_parents(associaton_type,  contact_directory, company_directory, associa
                         contact_ids.append(company_list[id])
                     for company_id in company_ids:
                         for contact_id in contact_ids:
-                            print(4)
                             makeParent_companyToContact(company_id, contact_id) # makes association for every instance of child and parent
                 elif (isinstance(company,list)) and (not isinstance(contact,list)): #if multiple instances of company but not contact
                     contact_id = contact_list[contact]
@@ -182,7 +179,6 @@ def make_parents(associaton_type,  contact_directory, company_directory, associa
                     for id in company:
                         company_ids.append(company_list[id])
                     for company_id in company_ids: #makes association for every child in lsit
-                        print(5)
                         makeParent_companyToContact(company_id, contact_id)   
                 elif (isinstance(contact,list)) and (not isinstance(company,list)): #if multiple instance of contacts but not multiple companies
                     company_id = company_list[company]
@@ -190,15 +186,12 @@ def make_parents(associaton_type,  contact_directory, company_directory, associa
                     for id in contact_ids:
                         contact_ids.append(contact_list[id])
                     for contact_id in contact_ids: #makes association for every contact in list
-                        print(6)
                         makeParent_companyToCompany(company_id, contact_id)                    
                 else:
                     company_id = company_list[company]
                     contact_id = contact_list[contact]
-                    print(7)
                     makeParent_companyToContact(company_id, contact_id)
             except:    
-                print(2)
                 if company_list[company] == None: # if company is not in dictionary then ...
                     print("ERROR: Company not found in list of companies")
                     failed.append("Company: "+ company + " was not found and failed to associate with " + contact) # appends failure message to failed array     
@@ -275,7 +268,9 @@ def handle_products(directory):
         # except:
         #        print("Error with import") 
 
-def update_products(directory):
+def update_products(directory, product_directory):
+    print("Starting import/update -",(time.strftime("%H:%M:%S", time.localtime())))
+    data = data_to_dict("products", product_directory)
     wb = Workbook()
     
     wb = load_workbook(directory)
@@ -327,13 +322,31 @@ def update_products(directory):
                 if isinstance(hs_cost_of_goods_sold.value, str): (hs_cost_of_goods_sold.value).replace("$", "")
             else:
                 properties["hs_cost_of_goods_sold"] = hs_cost_of_goods_sold.value
+            
+            # print(record_id.value)
+            # print(data.values())
 
-            print("********************************************")
-            print(properties)
-            update_product(record_id, properties)
-            print(properties)
+            if (str(name.value) == None) or (str(name.value) == "None") or (str(name.value) == "") or (str(name.value) == " "): 
+                continue 
+            elif str(record_id.value) in data.values():
+                # print("000000000")
+                print("********************************************")
+                print('updating', name.value, "record id:", record_id.value)
+                update_product(record_id.value, properties)
+            else:
+                # print("1111111")
+                # print(properties)
+                # print(record_id.value)
+                # print(data.values())
+                # print(data.values())
+                # print(data.keys())
+                
+                print("********************************************")
+                print('importing', name.value, "record id:", record_id.value)
+                import_product(properties)
         # except:
         #        print("Error with import") 
+    print("Ending import/update -",(time.strftime("%H:%M:%S", time.localtime())))
     
 
 def import_product(properties):
@@ -347,6 +360,7 @@ def import_product(properties):
 def update_product(product_id, properties):
     simple_public_object_input = SimplePublicObjectInput(properties=properties)
     try:
+        #print('product id:', product_id)
         api_response = client.crm.products.basic_api.update(product_id=product_id, simple_public_object_input=simple_public_object_input)
         pprint(api_response)
     except ApiException as e:
