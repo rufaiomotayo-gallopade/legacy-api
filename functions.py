@@ -114,8 +114,6 @@ def make_parents(associaton_type,  contact_directory, company_directory, associa
             #     print("ERROR: Child company not found in list of companies")
             #     failed.append(child + " failed to become child of " + parent) # appends failure message to failed array
             elif (isinstance(parent,list)) and isinstance(child,list): # if parent and children are both lists
-                # print(parent)
-                # print(child)
                 parent_ids = [] # makes array for parent ids
                 child_ids = [] # makes array for child ids
                 for id in parent:
@@ -160,8 +158,6 @@ def make_parents(associaton_type,  contact_directory, company_directory, associa
                 #print('contact', contact)
             except:
                 print("ERROR: Check associations.xlsx")
-
-
             try:
                 if (isinstance(company,list)) and isinstance(contact,list): # if both are lists . . .
                     company_ids = [] # makes array for company ids
@@ -205,68 +201,6 @@ def make_parents(associaton_type,  contact_directory, company_directory, associa
     #except:
     # print("ERROR: association type ")
     print("make_parents has been completed -",(time.strftime("%H:%M:%S", time.localtime())))
-
-def handle_products(directory):
-    wb = Workbook()
-    
-    wb = load_workbook(directory)
-    ws = wb.active
-
-    name_column = ws['A'] # names
-    price_column = ws['B'] # prices
-    description_column = ws['C'] 
-    hs_sku__column = ws['D'] 
-    hs_cost_of_goods_sold_column = ws['E'] 
-    
-    for (
-        name, 
-        price, 
-        description, 
-        hs_sku, 
-        hs_cost_of_goods_sold
-        ) in zip(
-            name_column, 
-            price_column, 
-            description_column, 
-            hs_sku__column,  
-            hs_cost_of_goods_sold_column,
-            ):
-        # try:
-            if name.value == "Name*": continue # doesnt count initial row
-            if name.value == "Example" and price.value == "0": continue # doesnt count example
-            if isinstance(price.value, str): (price.value).replace("$", "")
-
-            properties = {}
-            properties.update({"name": name.value})
-            properties.update({"price": price.value})
-
-            if description.value == None:
-                description.value = ""
-            else:
-                properties["description"] = description.value
-
-            if hs_sku.value == None:
-                hs_sku.value = ""
-            else:
-                properties["hs_sku"] = hs_sku.value
-
-            # if hs_recurring_billing_period.value == None:
-            #     hs_recurring_billing_period.value = ""
-            # else:
-            #     properties["hs_recurring_billing_period"] = hs_recurring_billing_period.value
-
-            if hs_cost_of_goods_sold.value == None:
-                hs_cost_of_goods_sold.value = ""
-            elif isinstance(hs_cost_of_goods_sold.value, str):
-                if isinstance(hs_cost_of_goods_sold.value, str): (hs_cost_of_goods_sold.value).replace("$", "")
-            else:
-                properties["hs_cost_of_goods_sold"] = hs_cost_of_goods_sold.value
-
-
-            #print(properties)
-            import_product(properties)
-        # except:
-        #        print("Error with import") 
 
 def update_products(directory, product_directory):
     print("Starting import/update -",(time.strftime("%H:%M:%S", time.localtime())))
